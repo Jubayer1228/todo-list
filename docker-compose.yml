@@ -1,0 +1,36 @@
+version: '3.7'
+# this is a docker compose file which will be used to containerize the app and the postgres database.
+# we will create two services here, once for the database and one to serve all the api's 
+# To use already existed postgres and if we need to run any custom sql we can define those under docker-entrypoint-initdb section. 
+# here for simplicity we used a pretty basic sql file which will create a user other than default postgres user, and database and finally a table
+# these will be created on port 3000 of the container which will be re routed to port 3000 of the localhost
+# "docker compose up"  is the command to run this. we can add -d to container in background 
+services:
+  go-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "host=go_db user=postgres password=postgres dbname=postgres sslmode=disable"
+    restart: always
+    networks:
+      - default
+    ports:
+      - "3000:3000"
+    depends_on:
+      - go_db
+  go_db:
+    container_name: go_db
+    image: postgres:12
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+#     use docker-entrypoint-initdb.d section to run any sql scripts to crete user,database, table or populate the table if necessary 
+      - ./init/db-config.sql:/docker-entrypoint-initdb.d/db-config.sql
+      - ./postgres-data:/var/lib/postgresql/data
+volumes:  
+  pgdata: {}
